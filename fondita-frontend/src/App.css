@@ -307,3 +307,49 @@ input[type="checkbox"] {
   height: 18px;
   cursor: pointer;
 }
+/* --- Estilos para la pantalla de presentación --- */
+.presentacion {
+  text-align: center;
+  padding: 40px;
+}
+
+.presentacion h1 {
+  color: #b71c1c;
+  font-size: 2em;
+}
+
+.presentacion p {
+  max-width: 600px;
+  margin: 20px auto;
+  font-size: 1.2em;
+  line-height: 1.6;
+}
+
+.imagen-presentacion {
+  width: 100%;
+  max-width: 600px;
+  height: 350px;              /* altura fija para mantener proporción */
+  object-fit: cover;          /* recorta la imagen sin deformarla */
+  object-position: center;    /* centra el recorte */
+  border-radius: 20px;        /* esquinas redondeadas */
+  margin: 25px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: block;
+  margin-left: auto;
+  margin-right: auto;         /* centra la imagen */
+}
+
+.boton-menu {
+  background-color: #e64a19;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1em;
+  transition: background 0.3s;
+}
+
+.boton-menu:hover {
+  background-color: #bf360c;
+}

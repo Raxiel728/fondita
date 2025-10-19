@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import imagenFondita from './assets/antojitos_veracruzanos.jpg';
 
 export default function App() {
   const [platos, setPlatos] = useState([]);
-  const [modo, setModo] = useState('ver'); // 'ver' o 'admin'
+  const [modo, setModo] = useState('presentacion'); // 'presentacion', 'ver', 'admin'
+  const [rol, setRol] = useState('cliente'); // 'cliente' o 'admin'
+  const [claveAdmin, setClaveAdmin] = useState(''); // contraseña admin
   const [formData, setFormData] = useState({
     nombre: '',
     precio: '',
@@ -48,7 +51,6 @@ export default function App() {
 
   const agregarOActualizar = async (e) => {
     e.preventDefault();
-
     if (!formData.nombre || formData.precio === '' || formData.precio === null) {
       alert('Nombre y precio son requeridos');
       return;
@@ -64,20 +66,16 @@ export default function App() {
       };
 
       if (editandoId !== null) {
-        // ACTUALIZAR
         const res = await fetch(`${API}/${editandoId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         const platoActualizado = await res.json();
-
         if (!platoActualizado || !platoActualizado.id) {
-          console.error('Error: plato actualizado no válido', platoActualizado);
           alert('No se pudo actualizar el plato');
           return;
         }
-
         setPlatos(platos.map(p =>
           p.id === Number(editandoId)
             ? {
@@ -92,7 +90,6 @@ export default function App() {
         ));
         setEditandoId(null);
       } else {
-        // CREAR
         const res = await fetch(API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -109,7 +106,6 @@ export default function App() {
         }]);
       }
 
-      // Limpiar formulario
       setFormData({ nombre: '', precio: '', descripcion: '', categoria: '', disponible: true });
     } catch (error) {
       console.error('Error al guardar plato:', error);
@@ -137,21 +133,17 @@ export default function App() {
     setEditandoId(Number(plato.id));
   };
 
-  // Filtrado seguro
   const platosFiltrados = platos.filter(p =>
     (p.nombre || '').toLowerCase().includes(buscar.toLowerCase())
   );
 
   return (
     <div className="app">
-      {/* PORTADA */}
-      <div className="portada">
-        <h1>🍲 Mi Fondita</h1>
-        <p>¡Disfruta los mejores antojitos veracruzanos!</p>
-      </div>
-
       <header className="header">
         <nav>
+          <button className={modo === 'presentacion' ? 'activo' : ''} onClick={() => setModo('presentacion')}>
+            Presentación
+          </button>
           <button className={modo === 'ver' ? 'activo' : ''} onClick={() => setModo('ver')}>
             Ver Menú
           </button>
@@ -161,16 +153,24 @@ export default function App() {
         </nav>
       </header>
 
+      {/* PRESENTACIÓN */}
+      {modo === 'presentacion' && (
+        <div className="presentacion">
+          <h1>🌮 Bienvenidos a Mi Fondita 🌶️</h1>
+          <p>En nuestra fondita te ofrecemos lo mejor de la cocina tradicional veracruzana,
+            con el sabor auténtico de nuestras abuelas. Disfruta de garnachas, picadas,
+            empanadas, tamales y muchas delicias más preparadas con amor.
+          </p>
+          <img src={imagenFondita} alt="Antojitos veracruzanos" className="imagen-presentacion"/>
+          <button className="boton-menu" onClick={() => setModo('ver')}>Ver el Menú 🍽️</button>
+        </div>
+      )}
+
       {/* MODO VER */}
-      {modo === 'ver' ? (
+      {modo === 'ver' && (
         <div className="menu">
           <h2>Nuestro Menú</h2>
-          <input
-            type="text"
-            placeholder="Buscar plato..."
-            value={buscar}
-            onChange={(e) => setBuscar(e.target.value)}
-          />
+          <input type="text" placeholder="Buscar plato..." value={buscar} onChange={(e) => setBuscar(e.target.value)}/>
           <div className="platos-grid">
             {platosFiltrados.map(plato => (
               <div key={plato.id} className="plato-card">
@@ -184,62 +184,39 @@ export default function App() {
             ))}
           </div>
         </div>
-      ) : (
-        /* MODO ADMIN */
+      )}
+
+      {/* LOGIN ADMIN */}
+      {modo === 'admin' && rol !== 'admin' && (
+        <div className="login-admin">
+          <h2>Acceso Administrativo</h2>
+          <input type="password" placeholder="Ingrese contraseña" value={claveAdmin} onChange={(e) => setClaveAdmin(e.target.value)} />
+          <button onClick={() => {
+            if(claveAdmin === '1234') setRol('admin');
+            else alert('Contraseña incorrecta');
+          }}>Ingresar</button>
+        </div>
+      )}
+
+      {/* PANEL ADMIN */}
+      {modo === 'admin' && rol === 'admin' && (
         <div className="admin">
           <h2>Administración del Menú</h2>
 
           <form onSubmit={agregarOActualizar} className="formulario">
-            <input
-              type="text"
-              name="nombre"
-              placeholder="Nombre del plato"
-              value={formData.nombre}
-              onChange={manejarCambio}
-              required
-            />
-            <input
-              type="number"
-              name="precio"
-              placeholder="Precio"
-              value={formData.precio}
-              onChange={manejarCambio}
-              required
-            />
-            <textarea
-              name="descripcion"
-              placeholder="Descripción"
-              value={formData.descripcion}
-              onChange={manejarCambio}
-            ></textarea>
-            <input
-              type="text"
-              name="categoria"
-              placeholder="Categoría"
-              value={formData.categoria}
-              onChange={manejarCambio}
-            />
+            <input type="text" name="nombre" placeholder="Nombre del plato" value={formData.nombre} onChange={manejarCambio} required />
+            <input type="number" name="precio" placeholder="Precio" value={formData.precio} onChange={manejarCambio} required />
+            <textarea name="descripcion" placeholder="Descripción" value={formData.descripcion} onChange={manejarCambio}></textarea>
+            <input type="text" name="categoria" placeholder="Categoría" value={formData.categoria} onChange={manejarCambio} />
             <label>
-              <input
-                type="checkbox"
-                name="disponible"
-                checked={formData.disponible}
-                onChange={manejarCambio}
-              />
+              <input type="checkbox" name="disponible" checked={formData.disponible} onChange={manejarCambio} />
               Disponible
             </label>
             <button type="submit">{editandoId ? 'Actualizar Plato' : 'Agregar Plato'}</button>
-            {editandoId && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditandoId(null);
-                  setFormData({ nombre: '', precio: '', descripcion: '', categoria: '', disponible: true });
-                }}
-              >
-                Cancelar
-              </button>
-            )}
+            {editandoId && <button type="button" onClick={() => {
+              setEditandoId(null);
+              setFormData({ nombre: '', precio: '', descripcion: '', categoria: '', disponible: true });
+            }}>Cancelar</button>}
           </form>
 
           <div className="platos-admin">
@@ -261,6 +238,8 @@ export default function App() {
               </div>
             ))}
           </div>
+
+          <button onClick={() => { setRol('cliente'); setModo('presentacion'); setClaveAdmin(''); }}>Cerrar Sesión Admin</button>
         </div>
       )}
     </div>
