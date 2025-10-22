@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import './App.css';
 import imagenFondita from './assets/antojitos_veracruzanos.jpg';
 
 export default function App() {
   const [platos, setPlatos] = useState([]);
-  const [modo, setModo] = useState('presentacion'); // 'presentacion', 'ver', 'admin'
-  const [rol, setRol] = useState('cliente'); // 'cliente' o 'admin'
-  const [claveAdmin, setClaveAdmin] = useState(''); // contraseña admin
+  const [modo, setModo] = useState('presentacion');
+  const [rol, setRol] = useState('cliente');
+  const [claveAdmin, setClaveAdmin] = useState('');
   const [formData, setFormData] = useState({
     nombre: '',
     precio: '',
@@ -72,20 +73,9 @@ export default function App() {
           body: JSON.stringify(payload)
         });
         const platoActualizado = await res.json();
-        if (!platoActualizado || !platoActualizado.id) {
-          alert('No se pudo actualizar el plato');
-          return;
-        }
         setPlatos(platos.map(p =>
           p.id === Number(editandoId)
-            ? {
-                ...p,
-                nombre: platoActualizado.nombre || '',
-                precio: parseFloat(platoActualizado.precio) || 0,
-                descripcion: platoActualizado.descripcion || '',
-                categoria: platoActualizado.categoria || '',
-                disponible: platoActualizado.disponible === 1 || platoActualizado.disponible === true
-              }
+            ? { ...platoActualizado, disponible: platoActualizado.disponible === 1 || platoActualizado.disponible === true }
             : p
         ));
         setEditandoId(null);
@@ -96,14 +86,7 @@ export default function App() {
           body: JSON.stringify(payload)
         });
         const nuevoPlato = await res.json();
-        setPlatos([...platos, {
-          id: nuevoPlato.id,
-          nombre: nuevoPlato.nombre || '',
-          precio: parseFloat(nuevoPlato.precio) || 0,
-          descripcion: nuevoPlato.descripcion || '',
-          categoria: nuevoPlato.categoria || '',
-          disponible: nuevoPlato.disponible === 1 || nuevoPlato.disponible === true
-        }]);
+        setPlatos([...platos, { ...nuevoPlato, disponible: nuevoPlato.disponible === 1 || nuevoPlato.disponible === true }]);
       }
 
       setFormData({ nombre: '', precio: '', descripcion: '', categoria: '', disponible: true });
@@ -139,69 +122,131 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="header">
+      {/* HEADER */}
+      <motion.header
+        className="header"
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+      >
+        <h1 style={{ marginBottom: '15px', fontFamily: "'Poppins', sans-serif" }}>🌸 Mi Fondita Veracruzana 🌸</h1>
         <nav>
           <button className={modo === 'presentacion' ? 'activo' : ''} onClick={() => setModo('presentacion')}>
-            Presentación
+            Inicio
           </button>
           <button className={modo === 'ver' ? 'activo' : ''} onClick={() => setModo('ver')}>
-            Ver Menú
+            Menú
           </button>
           <button className={modo === 'admin' ? 'activo' : ''} onClick={() => setModo('admin')}>
-            Admin
+            Administración
           </button>
         </nav>
-      </header>
+      </motion.header>
 
       {/* PRESENTACIÓN */}
       {modo === 'presentacion' && (
-        <div className="presentacion">
-          <h1>🌮 Bienvenidos a Mi Fondita 🌶️</h1>
-          <p>En nuestra fondita te ofrecemos lo mejor de la cocina tradicional veracruzana,
-            con el sabor auténtico de nuestras abuelas. Disfruta de garnachas, picadas,
-            empanadas, tamales y muchas delicias más preparadas con amor.
+        <motion.div
+          className="presentacion"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+        >
+          <h1>🍲 Bienvenidos a Mi Fondita Veracruzana 🌿</h1>
+          <p>
+            Donde los sabores del Golfo se mezclan con la calidez de casa.  
+            Prueba nuestras <strong>picadas, garnachas, empanadas y tamales</strong> elaborados con amor,  
+            ingredientes frescos y tradición veracruzana.
           </p>
-          <img src={imagenFondita} alt="Antojitos veracruzanos" className="imagen-presentacion"/>
-          <button className="boton-menu" onClick={() => setModo('ver')}>Ver el Menú 🍽️</button>
-        </div>
+          <motion.img
+            src={imagenFondita}
+            alt="Antojitos veracruzanos"
+            className="imagen-presentacion"
+            whileHover={{ scale: 1.03 }}
+            transition={{ duration: 0.3 }}
+          />
+          <motion.button
+            className="boton-menu"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setModo('ver')}
+          >
+            Ver el Menú 🍽️
+          </motion.button>
+        </motion.div>
       )}
 
       {/* MODO VER */}
       {modo === 'ver' && (
-        <div className="menu">
+        <motion.div
+          className="menu"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.7 }}
+        >
           <h2>Nuestro Menú</h2>
-          <input type="text" placeholder="Buscar plato..." value={buscar} onChange={(e) => setBuscar(e.target.value)}/>
+          <input
+            type="text"
+            placeholder="Buscar plato..."
+            value={buscar}
+            onChange={(e) => setBuscar(e.target.value)}
+          />
           <div className="platos-grid">
-            {platosFiltrados.map(plato => (
-              <div key={plato.id} className="plato-card">
-                <h3>{plato.nombre}</h3>
-                <p className="descripcion">{plato.descripcion}</p>
-                <p className="precio">${plato.precio.toFixed(2)}</p>
-                <p className={plato.disponible ? 'disponible' : 'no-disponible'}>
-                  {plato.disponible ? 'Disponible ✅' : 'No disponible ❌'}
-                </p>
-              </div>
-            ))}
+            {platosFiltrados.length > 0 ? (
+              platosFiltrados.map(plato => (
+                <motion.div
+                  key={plato.id}
+                  className="plato-card"
+                  whileHover={{ scale: 1.03 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <h3>{plato.nombre}</h3>
+                  <p className="descripcion">{plato.descripcion}</p>
+                  <p className="precio">${plato.precio.toFixed(2)}</p>
+                  <p className={plato.disponible ? 'disponible' : 'no-disponible'}>
+                    {plato.disponible ? 'Disponible ✅' : 'No disponible ❌'}
+                  </p>
+                </motion.div>
+              ))
+            ) : (
+              <p style={{ textAlign: 'center', color: '#6a4e23' }}>No se encontraron platos con ese nombre.</p>
+            )}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* LOGIN ADMIN */}
       {modo === 'admin' && rol !== 'admin' && (
-        <div className="login-admin">
+        <motion.div
+          className="login-admin"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
           <h2>Acceso Administrativo</h2>
-          <input type="password" placeholder="Ingrese contraseña" value={claveAdmin} onChange={(e) => setClaveAdmin(e.target.value)} />
+          <input
+            type="password"
+            placeholder="Ingrese contraseña"
+            value={claveAdmin}
+            onChange={(e) => setClaveAdmin(e.target.value)}
+          />
           <button onClick={() => {
-            if(claveAdmin === '1234') setRol('admin');
+            if (claveAdmin === '1234') setRol('admin');
             else alert('Contraseña incorrecta');
-          }}>Ingresar</button>
-        </div>
+          }}>
+            Ingresar
+          </button>
+        </motion.div>
       )}
 
       {/* PANEL ADMIN */}
       {modo === 'admin' && rol === 'admin' && (
-        <div className="admin">
-          <h2>Administración del Menú</h2>
+        <motion.div
+          className="admin"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+        >
+          <h2>Panel de Administración</h2>
 
           <form onSubmit={agregarOActualizar} className="formulario">
             <input type="text" name="nombre" placeholder="Nombre del plato" value={formData.nombre} onChange={manejarCambio} required />
@@ -209,20 +254,31 @@ export default function App() {
             <textarea name="descripcion" placeholder="Descripción" value={formData.descripcion} onChange={manejarCambio}></textarea>
             <input type="text" name="categoria" placeholder="Categoría" value={formData.categoria} onChange={manejarCambio} />
             <label>
-              <input type="checkbox" name="disponible" checked={formData.disponible} onChange={manejarCambio} />
-              Disponible
+              <input type="checkbox" name="disponible" checked={formData.disponible} onChange={manejarCambio} /> Disponible
             </label>
             <button type="submit">{editandoId ? 'Actualizar Plato' : 'Agregar Plato'}</button>
-            {editandoId && <button type="button" onClick={() => {
-              setEditandoId(null);
-              setFormData({ nombre: '', precio: '', descripcion: '', categoria: '', disponible: true });
-            }}>Cancelar</button>}
+            {editandoId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditandoId(null);
+                  setFormData({ nombre: '', precio: '', descripcion: '', categoria: '', disponible: true });
+                }}
+              >
+                Cancelar
+              </button>
+            )}
           </form>
 
           <div className="platos-admin">
             <h3>Platos Actuales</h3>
             {platos.map(plato => (
-              <div key={plato.id} className="plato-admin">
+              <motion.div
+                key={plato.id}
+                className="plato-admin"
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.3 }}
+              >
                 <div>
                   <strong>{plato.nombre}</strong>
                   <p>{plato.descripcion}</p>
@@ -235,12 +291,20 @@ export default function App() {
                   <button onClick={() => editar(plato)} className="editar">Editar</button>
                   <button onClick={() => eliminar(plato.id)} className="eliminar">Eliminar</button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
 
-          <button onClick={() => { setRol('cliente'); setModo('presentacion'); setClaveAdmin(''); }}>Cerrar Sesión Admin</button>
-        </div>
+          <motion.button
+            onClick={() => { setRol('cliente'); setModo('presentacion'); setClaveAdmin(''); }}
+            className="boton-menu"
+            style={{ marginTop: '30px' }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Cerrar Sesión
+          </motion.button>
+        </motion.div>
       )}
     </div>
   );

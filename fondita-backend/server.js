@@ -40,11 +40,71 @@ function toBool(val) {
   return !!+val;
 }
 
-/* RUTAS */
-// GET todos
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+// Registro de usuario (solo para crear cuentas nuevas)
+app.post('/api/register', async (req, res) => {
+  try {
+    const { nombre, email, password, rol = 'cliente' } = req.body;
+    if (!email || !password || !nombre)
+      return res.status(400).json({ error: 'Faltan datos' });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await pool.query(
+      'INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)',
+      [nombre, email, hashedPassword, rol]
+    );
+
+    res.json({ mensaje: 'Usuario registrado correctamente' });
+  } catch (err) {
+    console.error('POST /api/register error:', err);
+    res.status(500).json({ error: 'Error al registrar usuario' });
+  }
+});
+
+// Inicio de sesión
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const [rows] = await pool.query('SELECT * FROM usuarios WHERE email = ?', [email]);
+    if (rows.length === 0) return res.status(401).json({ error: 'Usuario no encontrado' });
+
+    const usuario = rows[0];
+    const valido = await bcrypt.compare(password, usuario.password);
+    if (!valido) return res.status(401).json({ error: 'Contraseña incorrecta' });
+
+    // Crear token
+    const token = jwt.sign(
+      { id: usuario.id, rol: usuario.rol },
+      process.env.JWT_SECRET || 'clave_secreta',
+      { expiresIn: '2h' }
+    );
+
+    res.json({ token, rol: usuario.rol, nombre: usuario.nombre });
+  } catch (err) {
+    console.error('POST /api/login error:', err);
+    res.status(500).json({ error: 'Error al iniciar sesión' });
+  }
+});
+
+function autenticarToken(req, res, next) {
+  const header = req.headers['authorization'];
+  const token = header && header.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Token no proporcionado' });
+
+  jwt.verify(token, process.env.JWT_SECRET || 'clave_secreta', (err, usuario) => {
+    if (err) return res.status(403).json({ error: 'Token inválido' });
+    req.usuario = usuario;
+    next();
+  });
+}
+
+/* RUTAS PÚBLICAS */
+// Los clientes solo pueden ver los platos
 app.get('/api/platos', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM platos ORDER BY id ASC;');
+    const [rows] = await pool.query('SELECT * FROM platos WHERE disponible = 1 ORDER BY id ASC;');
     const platos = rows.map(r => ({ ...r, disponible: toBool(r.disponible), precio: parseFloat(r.precio) }));
     res.json(platos);
   } catch (err) {
@@ -53,11 +113,25 @@ app.get('/api/platos', async (req, res) => {
   }
 });
 
-// POST crear
-app.post('/api/platos', async (req, res) => {
+/* RUTAS DE ADMIN */
+const ADMIN_TOKEN = 'clave-super-secreta'; // <-- cámbiala por algo más seguro
+
+// Middleware para verificar si es admin
+function verificarAdmin(req, res, next) {
+  const token = req.headers['authorization'];
+  if (token === `Bearer ${ADMIN_TOKEN}`) {
+    next(); // acceso permitido
+  } else {
+    res.status(403).json({ error: 'Acceso denegado' });
+  }
+}
+
+// Crear nuevo plato
+app.post('/api/admin/platos', verificarAdmin, async (req, res) => {
   try {
     const { nombre, precio, descripcion = '', categoria = '', disponible = true } = req.body;
-    if (!nombre || precio === undefined || precio === null) return res.status(400).json({ error: 'Nombre y precio requeridos' });
+    if (!nombre || precio === undefined || precio === null)
+      return res.status(400).json({ error: 'Nombre y precio requeridos' });
 
     const [result] = await pool.query(
       'INSERT INTO platos (nombre, precio, descripcion, categoria, disponible) VALUES (?, ?, ?, ?, ?)',
@@ -75,12 +149,12 @@ app.post('/api/platos', async (req, res) => {
   }
 });
 
-// PUT actualizar
-app.put('/api/platos/:id', async (req, res) => {
+// Actualizar
+app.put('/api/admin/platos/:id', verificarAdmin, async (req, res) => {
   try {
     const id = req.params.id;
     const { nombre, precio, descripcion, categoria, disponible } = req.body;
-
+    
     const [exist] = await pool.query('SELECT id FROM platos WHERE id = ? LIMIT 1', [id]);
     if (exist.length === 0) return res.status(404).json({ error: 'Plato no encontrado' });
 
@@ -108,12 +182,13 @@ app.put('/api/platos/:id', async (req, res) => {
   }
 });
 
-// DELETE
-app.delete('/api/platos/:id', async (req, res) => {
+// Eliminar
+app.delete('/api/admin/platos/:id', verificarAdmin, async (req, res) => {
   try {
     const id = req.params.id;
     const [rows] = await pool.query('SELECT * FROM platos WHERE id = ? LIMIT 1', [id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Plato no encontrado' });
+
     await pool.query('DELETE FROM platos WHERE id = ?', [id]);
     res.json({ mensaje: 'Plato eliminado', eliminado: rows[0] });
   } catch (err) {
@@ -121,6 +196,7 @@ app.delete('/api/platos/:id', async (req, res) => {
     res.status(500).json({ error: 'Error al eliminar plato' });
   }
 });
+
 
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
