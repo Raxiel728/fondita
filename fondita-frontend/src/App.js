@@ -1,3 +1,4 @@
+// ======================= APP.JS COMPLETO CON ADMIN OCULTO =======================
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -25,6 +26,9 @@ export default function App() {
   const [testimonioActual, setTestimonioActual] = useState(0);
   const [modalGaleria, setModalGaleria] = useState(null);
   const [contactForm, setContactForm] = useState({ nombre: '', email: '', mensaje: '' });
+  
+  // ⭐ NUEVO: Estado para mostrar/ocultar botón Admin
+  const [mostrarAdmin, setMostrarAdmin] = useState(false);
 
   const API = 'http://localhost:5000/api/platos';
 
@@ -37,6 +41,33 @@ export default function App() {
 
   // Estadísticas
   const [stats, setStats] = useState({ años: 0, platillos: 0, clientes: 0 });
+
+  // NUEVO: DETECTAR COMBINACIÓN DE TECLAS SECRETA "admin"
+  useEffect(() => {
+    let teclas = [];
+    
+    const manejarTecla = (e) => {
+      teclas.push(e.key.toLowerCase());
+      
+      // Limitar el array a los últimos 5 caracteres
+      if (teclas.length > 5) {
+        teclas.shift();
+      }
+      
+      // Combinación secreta: "admin"
+      if (teclas.join('') === 'admin') {
+        setMostrarAdmin(true);
+        console.log('🔓 Modo administrador activado');
+        teclas = [];
+      }
+    };
+
+    window.addEventListener('keydown', manejarTecla);
+    
+    return () => {
+      window.removeEventListener('keydown', manejarTecla);
+    };
+  }, []);
 
   useEffect(() => {
     cargarPlatos();
@@ -223,9 +254,16 @@ export default function App() {
             <button className={modo === 'contacto' ? 'activo' : ''} onClick={() => setModo('contacto')}>
               Contacto
             </button>
-            <button className={modo === 'admin' ? 'activo' : ''} onClick={() => setModo('admin')}>
-              Admin
-            </button>
+            
+            {/*  BOTÓN ADMIN SOLO VISIBLE SI mostrarAdmin ES TRUE */}
+            {mostrarAdmin && (
+              <button 
+                className={modo === 'admin' ? 'activo admin-btn' : 'admin-btn'} 
+                onClick={() => setModo('admin')}
+              >
+                🔒 Admin
+              </button>
+            )}
           </nav>
 
           <button className="theme-toggle" onClick={() => setModoOscuro(!modoOscuro)}>
@@ -297,26 +335,17 @@ export default function App() {
 
           {/* Estadísticas */}
           <section className="stats-section">
-            <motion.div
-              className="stat-card"
-              whileHover={{ scale: 1.05 }}
-            >
+            <motion.div className="stat-card" whileHover={{ scale: 1.05 }}>
               <FaClock className="stat-icon" />
               <h3>{stats.años}+</h3>
               <p>Años de experiencia</p>
             </motion.div>
-            <motion.div
-              className="stat-card"
-              whileHover={{ scale: 1.05 }}
-            >
+            <motion.div className="stat-card" whileHover={{ scale: 1.05 }}>
               <FaUtensils className="stat-icon" />
               <h3>{stats.platillos}+</h3>
               <p>Platillos en menú</p>
             </motion.div>
-            <motion.div
-              className="stat-card"
-              whileHover={{ scale: 1.05 }}
-            >
+            <motion.div className="stat-card" whileHover={{ scale: 1.05 }}>
               <FaUsers className="stat-icon" />
               <h3>{stats.clientes}+</h3>
               <p>Clientes satisfechos</p>
@@ -385,7 +414,6 @@ export default function App() {
         >
           <h2>Nuestro Menú</h2>
           
-          {/* Filtros mejorados */}
           <div className="menu-filters">
             <input
               type="text"
@@ -471,7 +499,6 @@ export default function App() {
             ))}
           </div>
 
-          {/* Modal de galería */}
           <AnimatePresence>
             {modalGaleria && (
               <motion.div
@@ -639,7 +666,12 @@ export default function App() {
           </div>
 
           <motion.button
-            onClick={() => { setRol('cliente'); setModo('presentacion'); setClaveAdmin(''); }}
+            onClick={() => { 
+              setRol('cliente'); 
+              setModo('presentacion'); 
+              setClaveAdmin(''); 
+              setMostrarAdmin(false); // Ocultar botón al cerrar sesión
+            }}
             className="boton-menu"
             style={{ marginTop: '30px' }}
             whileHover={{ scale: 1.05 }}
