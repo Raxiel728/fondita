@@ -238,7 +238,7 @@ export default function App() {
         <div className="header-content">
           <div className="logo-section">
             <FaLeaf className="logo-icon" />
-            <h1>Mi Fondita Veracruzana</h1>
+            <h1>Antojitos LA GLORIA</h1>
           </div>
           
           <nav className="nav-desktop">
@@ -289,14 +289,14 @@ export default function App() {
             >
               <h1 className="hero-title">
                 <span className="title-emoji">🍲</span> 
-                Bienvenidos a Mi Fondita Veracruzana 
+                Bienvenidos a Antojitos LA GLORIA 
                 <span className="title-emoji">🌿</span>
               </h1>
               <p className="hero-subtitle">
                 Donde los sabores del Golfo se mezclan con la calidez de casa
               </p>
               <p className="hero-description">
-                Prueba nuestras <strong>picadas, garnachas, empanadas y tamales</strong> elaborados 
+                Prueba nuestras <strong>comida casera</strong> elaborados 
                 con amor, ingredientes frescos y tradición veracruzana.
               </p>
               
