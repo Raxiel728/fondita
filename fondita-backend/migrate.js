@@ -1,24 +1,28 @@
-require('dotenv').config();
-const mysql = require('mysql2/promise');
+require("dotenv").config();
+const mysql = require("mysql2/promise");
 
 (async () => {
   try {
-    // Conectar al servidor MySQL (sin seleccionar DB aún)
+    console.log("🚀 Iniciando migración...");
+
+    // Conexión al servidor MySQL
     const connection = await mysql.createConnection({
       host: process.env.DB_HOST,
       port: process.env.DB_PORT,
       user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD
+      password: process.env.DB_PASSWORD,
     });
 
-    // Crear la base de datos si no existe
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\``);
+    // Crear BD si no existe
+    await connection.query(
+      `CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\``
+    );
     console.log(`✅ Base de datos '${process.env.DB_NAME}' lista.`);
 
-    // Seleccionar la base de datos
+    // Cambiar a la BD
     await connection.changeUser({ database: process.env.DB_NAME });
 
-    // Crear la tabla de platos con la columna 'categoria'
+    // Crear tabla
     await connection.query(`
       CREATE TABLE IF NOT EXISTS platos (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -29,11 +33,16 @@ const mysql = require('mysql2/promise');
         disponible BOOLEAN DEFAULT TRUE
       )
     `);
-    console.log('✅ Tabla "platos" creada o ya existente.');
+    console.log("✅ Tabla 'platos' creada o existente.");
 
-    // Insertar datos iniciales si la tabla está vacía
-    const [rows] = await connection.query('SELECT COUNT(*) AS count FROM platos');
+    // Verificar si hay datos
+    const [rows] = await connection.query(
+      "SELECT COUNT(*) AS count FROM platos"
+    );
+
     if (rows[0].count === 0) {
+      console.log("📥 Insertando datos iniciales...");
+
       await connection.query(`
         INSERT INTO platos (nombre, precio, descripcion, categoria)
         VALUES
@@ -68,14 +77,15 @@ const mysql = require('mysql2/promise');
             ('Hielito', 20.00, 'Hielito sabor a fruta', 'Postres'),
             ('Chamoyada', 35.00, 'Chamoyada con frutas y chamoy', 'Postres');
       `);
-      console.log('✅ Datos iniciales insertados.');
+
+      console.log("✅ Datos iniciales insertados correctamente.");
     } else {
-      console.log('ℹ️ Ya hay datos en la tabla, no se insertaron duplicados.');
+      console.log("ℹ️ Datos existentes detectados. No se insertaron duplicados.");
     }
 
     await connection.end();
-    console.log('🏁 Migración completada correctamente.');
+    console.log("🏁 Migración completada con éxito.");
   } catch (error) {
-    console.error('❌ Error durante la migración:', error);
+    console.error("❌ Error durante la migración:", error);
   }
 })();

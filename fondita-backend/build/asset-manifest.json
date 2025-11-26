@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/static/css/main.69b2b85b.css",
+    "main.js": "/static/js/main.43179c8f.js",
+    "static/js/453.98c1ead5.chunk.js": "/static/js/453.98c1ead5.chunk.js",
+    "static/media/antojitos_veracruzanos.jpg": "/static/media/antojitos_veracruzanos.8da79ef05342098e21ac.jpg",
+    "index.html": "/index.html",
+    "main.69b2b85b.css.map": "/static/css/main.69b2b85b.css.map",
+    "main.43179c8f.js.map": "/static/js/main.43179c8f.js.map",
+    "453.98c1ead5.chunk.js.map": "/static/js/453.98c1ead5.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.69b2b85b.css",
+    "static/js/main.43179c8f.js"
+  ]
+}

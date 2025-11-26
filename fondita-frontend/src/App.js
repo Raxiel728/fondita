@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fa';
 import './App.css';
 import imagenFondita from './assets/antojitos_veracruzanos.jpg';
+import { getImage } from './getImage';
 
 export default function App() {
   const [platos, setPlatos] = useState([]);
@@ -29,6 +30,7 @@ export default function App() {
   
   // ⭐ NUEVO: Estado para mostrar/ocultar botón Admin
   const [mostrarAdmin, setMostrarAdmin] = useState(false);
+  
 
   const API = 'http://localhost:5000/api/platos';
 
@@ -77,7 +79,7 @@ export default function App() {
     const timer = setInterval(() => {
       setStats(prev => ({
         años: prev.años < 15 ? prev.años + 1 : 15,
-        platillos: prev.platillos < 50 ? prev.platillos + 2 : 50,
+        platillos: prev.platillos < 30 ? prev.platillos + 2 : 30,
         clientes: prev.clientes < 1000 ? prev.clientes + 50 : 1000
       }));
     }, 50);
@@ -102,23 +104,26 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  const cargarPlatos = async () => {
-    try {
-      const res = await fetch(API);
-      const datos = await res.json();
-      const normalizados = datos.map(p => ({
-        id: p.id,
-        nombre: p.nombre || '',
-        precio: parseFloat(p.precio) || 0,
-        descripcion: p.descripcion || '',
-        categoria: p.categoria || '',
-        disponible: p.disponible === 1 || p.disponible === true
-      }));
-      setPlatos(normalizados);
-    } catch (error) {
-      console.error('Error al cargar platos:', error);
-    }
-  };
+ const cargarPlatos = async () => {
+  try {
+    const res = await fetch(API);
+    const datos = await res.json();
+
+    const normalizados = datos.map(p => ({
+      id: p.id,
+      nombre: p.nombre || '',
+      precio: parseFloat(p.precio) || 0,
+      descripcion: p.descripcion || '',
+      categoria: p.categoria || '',
+      disponible: p.disponible === 1 || p.disponible === true,
+      imagen: p.imagen || ''   // <--  Agregado
+    }));
+
+    setPlatos(normalizados);
+  } catch (error) {
+    console.error('Error al cargar platos:', error);
+  }
+};
 
   const manejarCambio = (e) => {
     const { name, value, type, checked } = e.target;
@@ -363,7 +368,7 @@ export default function App() {
             >
               <span className="offer-badge">Oferta Especial</span>
               <h2>Platillo del Día</h2>
-              <p>Picadas veracruzanas con salsa verde, queso fresco y crema - Solo $45 MXN</p>
+              <p>Picadas veracruzanas con salsa roja, queso fresco y crema - Solo $14 MXN</p>
               <button className="btn-offer" onClick={() => setModo('ver')}>
                 Ver Menú Completo
               </button>
@@ -475,56 +480,73 @@ export default function App() {
       )}
 
       {/* GALERÍA */}
-      {modo === 'galeria' && (
+{modo === 'galeria' && (
+  <motion.div
+    className="galeria-section"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+  >
+    <h2>Nuestra Galería</h2>
+
+    <div className="galeria-grid">
+      {platos.map((plato) => (
         <motion.div
-          className="galeria-section"
+          key={plato.id}
+          className="galeria-item"
+          whileHover={{ scale: 1.04 }}
+          onClick={() => setModalGaleria(plato)}
+        >
+          <img
+            src={getImage(plato.imagen)}
+            alt={plato.nombre}
+            className="galeria-img"
+          />
+          <div className="galeria-overlay">
+            <FaStar />
+            <p>{plato.nombre}</p>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+
+    <AnimatePresence>
+      {modalGaleria && (
+        <motion.div
+          className="modal-overlay"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setModalGaleria(null)}
         >
-          <h2>Nuestra Galería</h2>
-          <div className="galeria-grid">
-            {[1, 2, 3, 4, 5, 6].map((img) => (
-              <motion.div
-                key={img}
-                className="galeria-item"
-                whileHover={{ scale: 1.05 }}
-                onClick={() => setModalGaleria(img)}
-              >
-                <img src={imagenFondita} alt={`Platillo ${img}`} />
-                <div className="galeria-overlay">
-                  <FaStar />
-                  <p>Ver imagen</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          <motion.div
+            className="modal-content"
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0.9 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button className="modal-close" onClick={() => setModalGaleria(null)}>
+              <FaTimes />
+            </button>
 
-          <AnimatePresence>
-            {modalGaleria && (
-              <motion.div
-                className="modal-overlay"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setModalGaleria(null)}
-              >
-                <motion.div
-                  className="modal-content"
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0.8 }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button className="modal-close" onClick={() => setModalGaleria(null)}>
-                    <FaTimes />
-                  </button>
-                  <img src={imagenFondita} alt="Imagen ampliada" />
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            <img
+              src={getImage(modalGaleria.imagen)}
+              alt={modalGaleria.nombre}
+              className="modal-img"
+            />
+
+            <div className="modal-detalle">
+              <h3>{modalGaleria.nombre}</h3>
+              <p>{modalGaleria.descripcion}</p>
+              <p><strong>${modalGaleria.precio.toFixed(2)}</strong></p>
+            </div>
+          </motion.div>
         </motion.div>
       )}
+    </AnimatePresence>
+  </motion.div>
+)}
+
 
       {/* CONTACTO */}
       {modo === 'contacto' && (
@@ -641,29 +663,41 @@ export default function App() {
           </form>
 
           <div className="platos-admin">
-            <h3>Platos Actuales</h3>
-            {platos.map(plato => (
-              <motion.div
-                key={plato.id}
-                className="plato-admin"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div>
-                  <strong>{plato.nombre}</strong>
-                  <p>{plato.descripcion}</p>
-                  <p className="precio">${plato.precio.toFixed(2)}</p>
-                  <p className={plato.disponible ? 'disponible' : 'no-disponible'}>
-                    {plato.disponible ? 'Disponible ✅' : 'No disponible ❌'}
-                  </p>
-                </div>
-                <div className="botones">
-                  <button onClick={() => editar(plato)} className="editar">Editar</button>
-                  <button onClick={() => eliminar(plato.id)} className="eliminar">Eliminar</button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+  <h3>Platos Actuales</h3>
+  {platos.map(plato => (
+    <motion.div
+      key={plato.id}
+      className="plato-admin"
+      whileHover={{ scale: 1.02 }}
+      transition={{ duration: 0.3 }}
+    >
+
+      {/* Imagen del plato */}
+      {plato.imagen && (
+        <img
+          src={`http://localhost:5000${plato.imagen}`}
+          alt={plato.nombre}
+          className="imagen-plato-admin"
+        />
+      )}
+
+      <div>
+        <strong>{plato.nombre}</strong>
+        <p>{plato.descripcion}</p>
+        <p className="precio">${plato.precio.toFixed(2)}</p>
+        <p className={plato.disponible ? 'disponible' : 'no-disponible'}>
+          {plato.disponible ? 'Disponible ✅' : 'No disponible ❌'}
+        </p>
+      </div>
+
+      <div className="botones">
+        <button onClick={() => editar(plato)} className="editar">Editar</button>
+        <button onClick={() => eliminar(plato.id)} className="eliminar">Eliminar</button>
+      </div>
+
+    </motion.div>
+  ))}
+</div>
 
           <motion.button
             onClick={() => { 
